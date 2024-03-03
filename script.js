@@ -1,3 +1,17 @@
+const bg = [
+	'https://pbs.twimg.com/media/DBK-Jx-UAAU5hFH?format=jpg&name=large',
+	'https://pbs.twimg.com/media/DBK-JyhUMAARHtx?format=jpg&name=large',
+	'https://pbs.twimg.com/media/DBK-JyBUIAAdRPh?format=jpg&name=large',
+	'https://pbs.twimg.com/media/DBK-Jx-UwAQJGje?format=jpg&name=large'
+]
+// 랜덤 이미지 선택
+const randomIndex = Math.floor(Math.random() * bg.length);
+const randomImage = bg[randomIndex];
+
+// body 배경 지정
+document.body.style.backgroundImage = `url(${randomImage})`;
+
+
 // 실시간 시계
 function updateClock() {
 	const now = new Date();
@@ -32,7 +46,7 @@ function showLoggedIn() {
 	const username = localStorage.getItem("username");
 	// 이름으로 맞이 메시지 출력
 	const greetingElement = document.getElementById("greeting");
-	greetingElement.textContent = `안녕하세요, ${username}님!`;
+	greetingElement.textContent = `좋은 하루, ${username}!`;
 };
 
 // 로컬 스토리지에 저장된 이름이 있다면 로그인 처리
@@ -128,7 +142,7 @@ async function showWeatherAndLocation() {
 	const locationInfoElement = document.getElementById("location-info");
 
 	weatherInfoElement.textContent = `현재 온도: ${weatherData.main.temp}°C, ${weatherData.weather[0].description}`;
-	locationInfoElement.textContent = `위치: ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+	locationInfoElement.textContent = `위치 : ${weatherData.name}(${latitude.toFixed(2)}, ${longitude.toFixed(2)})`;
 }
 
 showWeatherAndLocation();
