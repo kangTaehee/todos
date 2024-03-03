@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>todo + login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="container">
+    <header>
+      <h1>샘플 화면</h1>
+      <div id="clock"></div>
+    </header>
+    <main>
+      <section id="login">
+        <h2>로그인</h2>
+        <form id="login-form">
+          <label for="username">이름</label>
+          <input type="text" id="username" name="username" placeholder="이름을 입력하세요">
+          <button type="submit">로그인</button>
+        </form>
+	</section>
+	<div id="greeting"></div>
+      <section id="todo">
+        <h2>투두리스트</h2>
+        <form id="todo-form">
+          <input type="text" id="new-todo" name="new-todo" placeholder="해야 할 일을 입력하세요">
+          <button type="submit">추가</button>
+        </form>
+        <ul id="todo-list"></ul>
+      </section>
+      <section id="weather">
+        <h2>날씨 및 위치</h2>
+        <p id="weather-info"></p>
+        <p id="location-info"></p>
+      </section>
+    </main>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
