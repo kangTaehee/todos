@@ -146,3 +146,7 @@ async function showWeatherAndLocation() {
 }
 
 showWeatherAndLocation();
+
+document.addEventListener("DOMContentLoaded", function() {
+	document.querySelector('#new-todo').focus()
+});
