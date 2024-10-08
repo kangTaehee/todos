@@ -96,10 +96,16 @@ function paintTodo(newTodoObj) {
 	// 화면에 투두리스트 추가
 	const todoItem = document.createElement("li");
 	todoItem.id=newTodoObj.id
+	todoItem.classList.add("todo-item");
+
 	const button = document.createElement("button");
 	button.innerText = "~(>_<。)＼"
 	button.addEventListener("click", deleteToDo)
-	todoItem.classList.add("todo-item");
+
+	const copybutton = document.createElement("button");
+	copybutton.innerText = "copy"
+	copybutton.addEventListener("click", copyToDo)
+	
 	const todoText = document.createElement("span");
 	todoText.textContent = newTodoObj.text;
 	todoItem.appendChild(todoText);
@@ -114,6 +120,17 @@ function deleteToDo(e) {
 	})
 	localStorage.setItem("todos", JSON.stringify(todos));
 	li.remove()
+}
+async function copyToDo(e) {
+	const li = e.target.parentElement
+	const textdata = li.querySelector('span').text
+	try {
+		await navigator.clipboard.writeText(textdata);
+		alert('클립보드에 복사되었습니다!');
+	} catch (err) {
+		console.error('복사 실패:', err);
+	}
+
 }
 
 // Geolocation API를 사용하여 현재 위치 가져오기
