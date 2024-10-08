@@ -2,7 +2,8 @@ const bg = [
 	'https://pbs.twimg.com/media/DBK-Jx-UAAU5hFH?format=jpg&name=large',
 	'https://pbs.twimg.com/media/DBK-JyhUMAARHtx?format=jpg&name=large',
 	'https://pbs.twimg.com/media/DBK-JyBUIAAdRPh?format=jpg&name=large',
-	'https://pbs.twimg.com/media/DBK-Jx-UwAQJGje?format=jpg&name=large'
+	'https://pbs.twimg.com/media/DBK-Jx-UwAQJGje?format=jpg&name=large',
+	'https://images.unsplash.com/photo-1501791187590-9ef2612ba1eb?q=80&w=2232&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
 ]
 // 랜덤 이미지 선택
 const randomIndex = Math.floor(Math.random() * bg.length);
@@ -108,6 +109,7 @@ function paintTodo(newTodoObj) {
 	
 	const todoText = document.createElement("span");
 	todoText.textContent = newTodoObj.text;
+	todoItem.appendChild(copybutton);
 	todoItem.appendChild(todoText);
 	todoItem.appendChild(button);
 
@@ -123,7 +125,7 @@ function deleteToDo(e) {
 }
 async function copyToDo(e) {
 	const li = e.target.parentElement
-	const textdata = li.querySelector('span').text
+	const textdata = li.querySelector('span').innerText
 	try {
 		await navigator.clipboard.writeText(textdata);
 		alert('클립보드에 복사되었습니다!');

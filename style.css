@@ -124,6 +124,11 @@ button {
 	align-items: center;
 	margin-top: 1rem;
 	border-radius: 10px;
+	gap:8px;
+	span{
+		flex-grow: 1;
+		text-align:left;
+	}
 }
 .todo-item button{
 	margin:0;
