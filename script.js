@@ -109,14 +109,32 @@ function paintTodo(newTodoObj) {
 	
 	const todoText = document.createElement("span");
 	todoText.textContent = newTodoObj.text;
+	todoText.addEventListener("click", link)
+
 	todoItem.appendChild(copybutton);
 	todoItem.appendChild(todoText);
 	todoItem.appendChild(button);
 
 	todoList.appendChild(todoItem);
 }
+function link(e) {
+  const url = e.target.textContent;
+
+  // 1. URL이 'http'로 시작하는지 체크
+  const isValidUrl = url.startsWith('http'); 
+
+  if (isValidUrl) {
+    // 2. 새 창으로 링크
+    window.open(url, '_blank');
+  } else {
+    console.error("유효하지 않은 URL (http로 시작하지 않음):", url);
+    // 필요하다면 사용자에게 알림
+    // alert("URL은 'http'로 시작해야 합니다.");
+  }
+}
 function deleteToDo(e) {
 	const li = e.target.parentElement
+	// json데이터에서 필터링하여 삭제함.
 	todos = todos.filter(todo => {
 		return todo.id != li.id
 	})
