@@ -5,6 +5,7 @@
 	margin: 0;
 	box-sizing: inherit;
 }
+
 html {
 	font-family: 'Lato', sans-serif;
 	font-family: 'Poppins', sans-serif;
@@ -31,12 +32,14 @@ header h1 {
 	margin-top: 3rem;
 	margin-bottom: 3rem;
 }
+
 form {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	width: 40vw;
 }
+
 input {
 	border: 1px solid #ffffffa8;
 	background: #89cfe657;
@@ -44,6 +47,7 @@ input {
 	padding: 10px;
 	margin: 10px 0;
 }
+
 button {
 	border: 1px solid #ffffffa8;
 	background: #89cfe657;
@@ -53,66 +57,12 @@ button {
 	color: #fff;
 	font-weight: bold;
 }
+
 #greeting {
 	font-size: 20px;
 	font-style: italic;
 }
-.todo-input {
-	background-color: #fff;
-	border: none;
-	outline: none;
-	padding: 1rem 2rem;
-	width: 100%;
-}
-.todo-add {
-	background-color: #48d632;
-	border: none;
-	outline: none;
-	padding: 1rem 2rem;
-	cursor: pointer;
-	color: #fff;
-}
-.filter {
-	position: relative;
-	overflow: hidden;
-}
-.filter::after {
-	content: '\025BC';
-	position: absolute;
-	top: 0;
-	right: 0;
-	background-color: #48d632;
-	pointer-events: none;
-	padding: 1rem;
-}
-.todo-filter {
-	background-color: #fff;
-	border: none;
-	outline: none;
-	padding: 1rem 2rem;
-	margin-left: 1rem;
-	appearance: none;
-	width: 20rem;
-	cursor: pointer;
-}
-.warning {
-	width: 40vw;
-	margin-top: 0.5rem;
-}
-.warning-text {
-	color: yellow;
-	font-size: 1.2rem;
-	/* display: none; */
-	visibility: hidden;
-}
-.todo-container {
-	width: 40vw;
-	margin-top: 2rem;
-}
-.todo-list {
-	list-style: none;
-	width: 100%;
-}
+
 .todo-item {
 	padding: 10px;
 	padding-right: 10px;
@@ -124,42 +74,40 @@ button {
 	align-items: center;
 	margin-top: 1rem;
 	border-radius: 10px;
-	gap:8px;
-	span{
+	gap: 8px;
+
+	span {
 		flex-grow: 1;
-		text-align:left;
+		text-align: left;
 	}
 }
-.todo-item button{
-	margin:0;
+
+.todo-item *:hover {
+	text-decoration: underline;
 }
-.todo-text {
-	flex: 1;
-	padding-left: 1rem;
+
+.todo-item button {
+	margin: 0;
 }
-.todo-completed {
-	background-color: #48d632;
-	padding: 1rem;
-	color: #fff;
-	cursor: pointer;
+
+.hidden { display: none;
 }
-.completed {
-	text-decoration: line-through;
-	opacity: 0.5;
-}
-.todo-delete {
-	background-color: rgb(232, 113, 113);
-	padding: 1rem;
-	color: #fff;
-	cursor: pointer;
-}
-.fa-trash,
-.fa-check {
-	pointer-events: none;
-}
-.hidden {
-	display: none;
-}
+
 #clock {
 	font-size: 50px;
+}
+
+.github {
+	position: fixed;
+	left: 20px;
+	bottom: 20px;
+	width: 30px;
+	aspect-ratio: 1;
+	border-radius: 30px;
+	background-color: blueviolet;
+	display: flex;
+	align-items: center;
+	color: #fff;
+	justify-content: center;
+	text-decoration: none;
 }

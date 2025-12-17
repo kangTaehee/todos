@@ -1,0 +1,45 @@
+<html lang="ko"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>todo + login</title>
+  <link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+</head>
+
+<body style="background-image: url(&quot;https://pbs.twimg.com/media/DBK-Jx-UwAQJGje?format=jpg&amp;name=large&quot;);">
+  <div id="container">
+    <header>
+      <div id="clock"><span class="math-inline">09:</span>58:30</div>
+    </header>
+    <main>
+      <section id="login" class="hidden">
+        <h2>로그인</h2>
+        <form id="login-form">
+          <label for="username">이름</label>
+          <input type="text" id="username" name="username" placeholder="이름을 입력하세요">
+          <button type="submit">로그인</button>
+        </form>
+      </section>
+      <div id="greeting">좋은 하루, 태희!</div>
+      <section id="todo">
+        <h2>투두리스트</h2>
+        <form id="todo-form">
+          <input type="text" id="new-todo" name="new-todo" placeholder="해야 할 일을 입력하세요">
+          <button type="submit">추가</button>
+        </form>
+        <ul id="todo-list"><li id="1754282993504" class="todo-item"><button>copy</button><span>shape-outside</span><button>~(&gt;_&lt;。)＼</button></li><li id="1754284076539" class="todo-item"><button>copy</button><span>reading-flow</span><button>~(&gt;_&lt;。)＼</button></li><li id="1755067850662" class="todo-item"><button>copy</button><span>https://www.notion.so/23e9733108f480988884fa0be88baa90?v=23e9733108f480ac8524000c286f908a</span><button>~(&gt;_&lt;。)＼</button></li><li id="1755067890583" class="todo-item"><button>copy</button><span>https://www.notion.so/git-1acc50b6f32880b39942ceea77764b83</span><button>~(&gt;_&lt;。)＼</button></li><li id="1758785938016" class="todo-item"><button>copy</button><span>공유마당 메인 디자인</span><button>~(&gt;_&lt;。)＼</button></li><li id="1760517365269" class="todo-item"><button>copy</button><span>https://pms.unpl.co.kr/redmine/issues/22624</span><button>~(&gt;_&lt;。)＼</button></li><li id="1765177868527" class="todo-item"><button>copy</button><span>청노지 이관대상 관리자 첨부파일 게시판</span><button>~(&gt;_&lt;。)＼</button></li><li id="1765931926871" class="todo-item"><button>copy</button><span>https://pms.unpl.co.kr/redmine/my/page</span><button>~(&gt;_&lt;。)＼</button></li></ul>
+      </section>
+      <section id="weather">
+        <h2>날씨 및 위치</h2>
+        <p id="weather-info">현재 온도: 1.98°C, mist</p>
+        <p id="location-info">위치 : Kwangmyŏng(37.49, 126.89)</p>
+      </section>
+    </main>
+  </div>
+  <script src="script.js"></script>
+
+
+</body></html>

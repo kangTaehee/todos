@@ -77,6 +77,7 @@ todoForm.addEventListener("submit", (event) => {
 		text: newTodo,
 		id: Date.now(),
 		done: false,
+		datetime:getCurrentDateYMD() 
 	}
 	todos.push(newTodoObj);
 	localStorage.setItem("todos", JSON.stringify(todos));
@@ -110,9 +111,14 @@ function paintTodo(newTodoObj) {
 	const todoText = document.createElement("span");
 	todoText.textContent = newTodoObj.text;
 	todoText.addEventListener("click", link)
+	
+	const todoInsertDateTime = document.createElement("span");
+	todoInsertDateTime.textContent = newTodoObj.datetime
+	// todoText.addEventListener("click", link)
 
 	todoItem.appendChild(copybutton);
 	todoItem.appendChild(todoText);
+	todoItem.appendChild(todoInsertDateTime);
 	todoItem.appendChild(button);
 
 	todoList.appendChild(todoItem);
@@ -187,3 +193,25 @@ showWeatherAndLocation();
 document.addEventListener("DOMContentLoaded", function() {
 	document.querySelector('#new-todo').focus()
 });
+/**
+ * 현재 시간을 'yy-m-d' 형식의 문자열로 반환합니다.
+ * (예: 25-12-17)
+ * * @returns {string} 'yy-m-d' 형식의 날짜 문자열
+ */
+function getCurrentDateYMD() {
+  const now = new Date();
+  
+  // 연도의 마지막 두 자리 (예: 2025 -> 25)
+  // getFullYear()은 4자리 연도를 반환하며, % 100을 사용해 마지막 두 자리를 얻습니다.
+  const year = now.getFullYear() % 100;
+  
+  // 월 (1부터 시작)
+  // getMonth()는 0부터 11까지를 반환하므로, +1을 해줍니다.
+  const month = now.getMonth() + 1;
+  
+  // 일
+  const day = now.getDate();
+  
+  // 템플릿 리터럴을 사용하여 'yy-m-d' 형식으로 조합합니다.
+  return `${year}-${month}-${day}`;
+}
