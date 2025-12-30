@@ -22,6 +22,8 @@ body {
 	align-items: center;
 	height: 100vh;
 	text-align: center;
+	background-position: center;
+    background-size: cover;
 }
 
 header h1 {
