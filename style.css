@@ -23,7 +23,7 @@ body {
 	height: 100vh;
 	text-align: center;
 	background-position: center;
-    background-size: cover;
+    background-size: contain;
 }
 
 header h1 {
@@ -68,7 +68,9 @@ button {
 .todo-item {
 	padding: 10px;
 	padding-right: 10px;
-	display: flex;
+	display:grid;
+	grid-template-columns: 54px 1fr 70px 84px;
+	gap: 8px;
 	background-color: #ffffffab;
 	color: #000;
 	justify-content: space-between;
@@ -76,8 +78,6 @@ button {
 	align-items: center;
 	margin-top: 1rem;
 	border-radius: 10px;
-	gap: 8px;
-
 	span {
 		flex-grow: 1;
 		text-align: left;
