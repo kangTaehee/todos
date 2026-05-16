@@ -23,7 +23,7 @@ body {
 	height: 100vh;
 	text-align: center;
 	background-position: center;
-    background-size: contain;
+	background-size: contain;
 }
 
 header h1 {
@@ -68,7 +68,7 @@ button {
 .todo-item {
 	padding: 10px;
 	padding-right: 10px;
-	display:grid;
+	display: grid;
 	grid-template-columns: 54px 1fr 70px 84px;
 	gap: 8px;
 	background-color: #ffffffab;
@@ -78,35 +78,45 @@ button {
 	align-items: center;
 	margin-top: 1rem;
 	border-radius: 10px;
+	transition: all .3s ease-in-out;
 	span {
 		flex-grow: 1;
 		text-align: left;
+		cursor:pointer;
 	}
 }
+.todo-item:has(span:hover){
+	background-color:#fff;
+}
+
 
 .todo-item *:hover {
 	text-decoration: underline;
 }
 
-.todo-item button {
-	margin: 0;
+.todo-item {
+	button {
+		margin: 0;
+	}
 }
 
-.hidden { display: none;
+.hidden {
+	display: none;
 }
 
 #clock {
 	font-size: 50px;
 }
+
 .btn-backup,
 .github {
-	margin:0;
-	padding:0;
+	margin: 0;
+	padding: 0;
 	position: fixed;
 	left: 20px;
 	bottom: 20px;
 	width: 30px;
-	height:30px;
+	height: 30px;
 	aspect-ratio: 1;
 	border-radius: 30px;
 	background-color: blueviolet;
@@ -115,12 +125,16 @@ button {
 	color: #fff;
 	justify-content: center;
 	text-decoration: none;
-	font-size:12px;
-	font-weight:normal;
-	overflow:hidden;
-	
+	font-size: 12px;
+	font-weight: normal;
+	overflow: hidden;
+
 }
-.btn-backup{
-	left:55px;
+
+.btn-backup {
+	left: 55px;
 }
-.backup-restore-container{display:none;}
+
+.backup-restore-container {
+	display: none;
+}
