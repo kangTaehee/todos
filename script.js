@@ -169,7 +169,7 @@ function getCurrentPosition() {
 // OpenWeatherMap API를 사용하여 날씨 정보 가져오기
 async function getWeather(lat, lon) {
 	const API_KEY = "d4fdf657104aefac06bb4daff3880eb6"; // OpenWeatherMap API 키를 입력하세요
-	const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
+	const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=kr`;
 	const response = await fetch(url);
 	const data = await response.json();
 	return data;
