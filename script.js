@@ -84,8 +84,13 @@ todoForm.addEventListener("submit", async (event) => {
 	newTodoInput.value = "";
 	if (!newTodo || !currentUsername) return;
 
+	const parts = newTodo.split('|');
+	const text = parts[0].trim();
+	const title = parts[1]?.trim() || null;
+
 	const newTodoObj = {
-		text: newTodo,
+		text,
+		title,
 		id: Date.now(),
 		done: false,
 		datetime: getCurrentDateYMD()
@@ -126,7 +131,9 @@ function paintTodo(newTodoObj) {
 	copybutton.addEventListener("click", copyToDo);
 
 	const todoText = document.createElement("span");
-	todoText.textContent = newTodoObj.text;
+	todoText.textContent = newTodoObj.title || newTodoObj.text;
+	todoText.dataset.url = newTodoObj.text;
+	if (newTodoObj.title) todoText.classList.add("has-link");
 	todoText.addEventListener("click", link);
 
 	const todoInsertDateTime = document.createElement("span");
@@ -141,7 +148,7 @@ function paintTodo(newTodoObj) {
 }
 
 function link(e) {
-	const url = e.target.textContent;
+	const url = e.target.dataset.url || e.target.textContent;
 	if (url.startsWith('http')) {
 		window.open(url, '_blank');
 	}
@@ -160,7 +167,8 @@ async function deleteToDo(e) {
 
 async function copyToDo(e) {
 	const li = e.target.parentElement;
-	const textdata = li.querySelector('span').innerText;
+	const span = li.querySelector('span');
+	const textdata = span.dataset.url || span.innerText;
 	try {
 		await navigator.clipboard.writeText(textdata);
 		alert('클립보드에 복사되었습니다!');

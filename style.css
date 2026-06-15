@@ -94,6 +94,11 @@ button {
 	text-decoration: underline;
 }
 
+.todo-item span.has-link::before {
+	content: '🔗 ';
+	font-size: 0.85em;
+}
+
 .todo-item {
 	button {
 		margin: 0;
