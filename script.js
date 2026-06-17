@@ -149,7 +149,7 @@ function paintTodo(newTodoObj) {
 
 function link(e) {
 	const url = e.target.dataset.url || e.target.textContent;
-	if (url.startsWith('http')) {
+	if (url.startsWith('http') || url.startsWith('file') ) {
 		window.open(url, '_blank');
 	}
 }
