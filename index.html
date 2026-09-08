@@ -28,15 +28,28 @@
         </form>
       </section>
       <div id="greeting"></div>
-      <section id="todo">
-        <h2>투두리스트</h2>
-        <form id="todo-form">
-          <input type="text" id="new-todo" name="new-todo" placeholder="할일  또는  URL|링크제목">
-          
-          <button type="submit">추가</button>
-        </form>
-        <ul id="todo-list"></ul>
-      </section>
+      <div class="content-grid">
+        <section id="todo">
+          <h2>투두리스트</h2>
+          <form id="todo-form">
+            <input type="text" id="new-todo" name="new-todo" placeholder="할일  또는  URL|링크제목">
+
+            <button type="submit">추가</button>
+          </form>
+          <ul id="todo-list"></ul>
+        </section>
+        <section id="bookmarks">
+          <h2>즐겨찾기</h2>
+          <form id="bookmark-form">
+            <input type="text" id="bookmark-title" name="bookmark-title" placeholder="링크 제목">
+            <input type="url" id="bookmark-url" name="bookmark-url" placeholder="https://...">
+            <input type="text" id="bookmark-key" name="bookmark-key" maxlength="1" placeholder="키" title="단축키 (선택) — 입력창 밖에서 해당 키를 누르면 링크가 새 창으로 열립니다">
+            <button type="submit" id="bookmark-submit">추가</button>
+            <button type="button" id="bookmark-cancel" class="hidden">취소</button>
+          </form>
+          <ul id="bookmark-list"></ul>
+        </section>
+      </div>
       <section id="weather">
         <h2>날씨 및 위치</h2>
         <p id="weather-info"></p>

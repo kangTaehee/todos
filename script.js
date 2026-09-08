@@ -65,6 +65,7 @@ async function showLoggedIn(username) {
 	}
 
 	await loadTodosFromFirestore(username);
+	await loadBookmarksFromFirestore(username);
 }
 
 // 자동 로그인
@@ -177,6 +178,164 @@ async function copyToDo(e) {
 	}
 }
 
+// 즐겨찾기
+const bookmarkForm = document.getElementById("bookmark-form");
+const bookmarkTitleInput = document.getElementById("bookmark-title");
+const bookmarkUrlInput = document.getElementById("bookmark-url");
+const bookmarkKeyInput = document.getElementById("bookmark-key");
+const bookmarkSubmitBtn = document.getElementById("bookmark-submit");
+const bookmarkCancelBtn = document.getElementById("bookmark-cancel");
+const bookmarkList = document.getElementById("bookmark-list");
+
+let editingBookmarkId = null;
+
+bookmarkForm.addEventListener("submit", async (event) => {
+	event.preventDefault();
+	if (!currentUsername) {
+		alert("로그인 후 이용 가능합니다.");
+		return;
+	}
+
+	const title = bookmarkTitleInput.value.trim();
+	const url = bookmarkUrlInput.value.trim();
+	const key = bookmarkKeyInput.value.trim().toLowerCase() || null;
+	if (!title || !url) return;
+
+	// 단축키 중복 확인
+	if (key === 'i') {
+		alert("단축키 'i'는 할일 입력란 포커스용으로 예약되어 있습니다.");
+		return;
+	}
+	if (key) {
+		const dup = bookmarkList.querySelector(`li[data-key="${CSS.escape(key)}"]`);
+		if (dup && String(dup.id) !== String(editingBookmarkId)) {
+			alert(`단축키 '${key}'는 이미 사용 중입니다.`);
+			return;
+		}
+	}
+
+	const bookmarksRef = db.collection('users').doc(currentUsername).collection('bookmarks');
+
+	if (editingBookmarkId) {
+		// 수정
+		await bookmarksRef.doc(String(editingBookmarkId)).update({ title, url, key });
+		const item = bookmarkList.querySelector(`li[id="${editingBookmarkId}"]`);
+		if (item) {
+			const link = item.querySelector('.bookmark-link');
+			link.textContent = title;
+			link.dataset.url = url;
+			link.title = url;
+			applyBookmarkKey(item, key);
+		}
+		exitBookmarkEditMode();
+	} else {
+		// 추가
+		const newBookmark = { title, url, key, id: Date.now() };
+		await bookmarksRef.doc(String(newBookmark.id)).set(newBookmark);
+		paintBookmark(newBookmark);
+		bookmarkForm.reset();
+	}
+});
+
+bookmarkCancelBtn.addEventListener("click", exitBookmarkEditMode);
+
+function exitBookmarkEditMode() {
+	editingBookmarkId = null;
+	bookmarkForm.reset();
+	bookmarkSubmitBtn.textContent = "추가";
+	bookmarkCancelBtn.classList.add("hidden");
+}
+
+async function loadBookmarksFromFirestore(username) {
+	bookmarkList.innerHTML = "";
+	exitBookmarkEditMode();
+
+	const snapshot = await db.collection('users').doc(username)
+		.collection('bookmarks').orderBy('id').get();
+
+	snapshot.forEach(doc => paintBookmark(doc.data()));
+}
+
+function paintBookmark(bookmark) {
+	const item = document.createElement("li");
+	item.id = bookmark.id;
+	item.classList.add("bookmark-item");
+
+	const link = document.createElement("span");
+	link.classList.add("bookmark-link");
+	link.textContent = bookmark.title;
+	link.dataset.url = bookmark.url;
+	link.title = bookmark.url;
+	link.addEventListener("click", () => {
+		window.open(link.dataset.url, '_blank', 'noopener');
+	});
+
+	const editButton = document.createElement("button");
+	editButton.innerText = "✏️";
+	editButton.title = "수정";
+	editButton.addEventListener("click", () => {
+		editingBookmarkId = bookmark.id;
+		bookmarkTitleInput.value = link.textContent;
+		bookmarkUrlInput.value = link.dataset.url;
+		bookmarkKeyInput.value = item.dataset.key || "";
+		bookmarkSubmitBtn.textContent = "수정";
+		bookmarkCancelBtn.classList.remove("hidden");
+		bookmarkTitleInput.focus();
+	});
+
+	const deleteButton = document.createElement("button");
+	deleteButton.innerText = "🗑️";
+	deleteButton.title = "삭제";
+	deleteButton.addEventListener("click", async () => {
+		await db.collection('users').doc(currentUsername)
+			.collection('bookmarks').doc(String(bookmark.id)).delete();
+		if (editingBookmarkId === bookmark.id) exitBookmarkEditMode();
+		item.remove();
+	});
+
+	item.appendChild(link);
+	item.appendChild(editButton);
+	item.appendChild(deleteButton);
+	applyBookmarkKey(item, bookmark.key);
+	bookmarkList.appendChild(item);
+}
+
+// 뱃지에 단축키 표시(kbd)와 data-key 속성을 적용/제거
+function applyBookmarkKey(item, key) {
+	let kbd = item.querySelector('kbd');
+	if (key) {
+		item.dataset.key = key;
+		if (!kbd) {
+			kbd = document.createElement('kbd');
+			item.insertBefore(kbd, item.querySelector('.bookmark-link'));
+		}
+		kbd.textContent = key;
+	} else {
+		delete item.dataset.key;
+		if (kbd) kbd.remove();
+	}
+}
+
+// 전역 단축키 — 입력창에 포커스가 없을 때 동작
+// i: 할일 입력란 포커스 / 그 외: 즐겨찾기에 지정된 키면 링크가 새 창으로 열림
+document.addEventListener("keydown", (e) => {
+	if (e.ctrlKey || e.altKey || e.metaKey) return;
+	const tag = e.target.tagName;
+	if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+
+	if (e.key.toLowerCase() === 'i') {
+		e.preventDefault();
+		newTodoInput.focus();
+		return;
+	}
+
+	const item = bookmarkList.querySelector(`li[data-key="${CSS.escape(e.key.toLowerCase())}"]`);
+	if (item) {
+		const link = item.querySelector('.bookmark-link');
+		window.open(link.dataset.url, '_blank', 'noopener');
+	}
+});
+
 // 날씨
 function getCurrentPosition() {
 	return new Promise((resolve, reject) => {
@@ -203,7 +362,6 @@ async function showWeatherAndLocation() {
 showWeatherAndLocation();
 
 document.addEventListener("DOMContentLoaded", function() {
-	document.querySelector('#new-todo').focus();
 	initBgSelector();
 });
 
