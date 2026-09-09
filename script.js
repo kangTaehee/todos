@@ -359,7 +359,41 @@ async function showWeatherAndLocation() {
 	document.getElementById("location-info").textContent = `위치 : ${weatherData.name}(${latitude.toFixed(2)}, ${longitude.toFixed(2)})`;
 }
 
-showWeatherAndLocation();
+// 위치 권한이 이미 허용된 경우에만 자동으로 조회하고, 그렇지 않으면
+// 버튼 클릭(사용자 제스처) 시에만 요청해 매 방문마다 권한 팝업이 뜨는 것을 방지한다.
+async function initWeather() {
+	const btnWeather = document.getElementById("btn-weather");
+
+	const requestWeather = () => {
+		showWeatherAndLocation().catch(() => {
+			document.getElementById("weather-info").textContent = "위치 권한이 필요합니다.";
+			btnWeather.classList.remove("hidden");
+		});
+	};
+
+	btnWeather.addEventListener("click", () => {
+		btnWeather.classList.add("hidden");
+		requestWeather();
+	});
+
+	if (!navigator.permissions?.query) {
+		btnWeather.classList.remove("hidden");
+		return;
+	}
+
+	try {
+		const status = await navigator.permissions.query({ name: "geolocation" });
+		if (status.state === "granted") {
+			requestWeather();
+		} else {
+			btnWeather.classList.remove("hidden");
+		}
+	} catch {
+		btnWeather.classList.remove("hidden");
+	}
+}
+
+initWeather();
 
 document.addEventListener("DOMContentLoaded", function() {
 	initBgSelector();
