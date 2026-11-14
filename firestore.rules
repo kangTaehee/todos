@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// todos 앱 Firestore 보안 규칙
+// Firebase 콘솔 > Firestore Database > 규칙 탭에 그대로 붙여넣고 [게시]한다.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 각 사용자는 자기 uid 문서와 그 하위(todos, bookmarks)만 읽고 쓸 수 있다
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 이름 기반 → 계정 데이터 1회 이전용 문서 (users/migrate-<토큰>)
+    // 토큰을 아는 로그인 사용자만 단건 조회·삭제 가능. 목록 조회는 불가하므로 토큰을 추측할 수 없다.
+    match /users/{migrationId} {
+      allow get, delete: if request.auth != null && migrationId.matches('migrate-.+');
+    }
+
+    // 그 외 모든 경로는 기본 거부
+  }
+}

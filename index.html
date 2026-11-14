@@ -14,19 +14,19 @@
 
 <body>
   <a href="https://github.com/kangTaehee/todos" target="_blank" title="새창열림" class="github" rel="noopener">git</a>
+  <button class="btn-logout hidden" id="btn-logout" title="로그아웃">out</button>
   <div id="container">
     <header>
       <div id="clock"></div>
     </header>
     <main>
-      <section id="login">
+      <section id="login" class="hidden">
         <h2>로그인</h2>
-        <form id="login-form">
-          <label for="username">이름</label>
-          <input type="text" id="username" name="username" placeholder="이름을 입력하세요">
-          <button type="submit">로그인</button>
-        </form>
+        <p class="login-desc">Google 계정으로 로그인하면 내 할일과 즐겨찾기는 나만 볼 수 있습니다.</p>
+        <button type="button" id="btn-login">Google 계정으로 로그인</button>
+        <p id="login-message" role="alert"></p>
       </section>
+      <div id="app" class="hidden">
       <div id="greeting"></div>
       <div class="content-grid">
         <section id="todo">
@@ -50,6 +50,7 @@
           <ul id="bookmark-list"></ul>
         </section>
       </div>
+      </div>
       <section id="weather">
         <h2>날씨 및 위치</h2>
         <p id="weather-info"></p>
@@ -60,6 +61,7 @@
   </div>
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
   <script src="script.js"></script>

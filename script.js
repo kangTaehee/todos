@@ -12,7 +12,8 @@ document.body.style.backgroundImage = `url(${bg[tempBgIndex]})`;
 
 
 
-let currentUsername = null;
+// 로그인한 사용자의 Firebase Auth uid — Firestore 경로 users/{uid}의 키
+let currentUid = null;
 let todos = [];
 
 // 실시간 시계
@@ -26,52 +27,111 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 
-// 로그인
-const loginForm = document.getElementById("login-form");
-const usernameInput = document.getElementById("username");
+// 로그인 (Firebase Auth — Google 계정)
+// 로그인 상태는 Firebase가 브라우저에 보관하므로 로그아웃 전까지 자동 유지된다.
+const loginSection = document.getElementById("login");
+const appSection = document.getElementById("app");
+const btnLogin = document.getElementById("btn-login");
+const btnLogout = document.getElementById("btn-logout");
+const loginMessage = document.getElementById("login-message");
 
-loginForm.addEventListener("submit", async (event) => {
-	event.preventDefault();
-	const username = usernameInput.value.trim();
-	if (!username) return;
+// 이름 기반 로그인 시절의 자동 로그인 키 정리
+localStorage.removeItem("username");
 
-	const userRef = db.collection('users').doc(username);
-	const userDoc = await userRef.get();
-
-	if (!userDoc.exists) {
-		// 신규 사용자 — 현재 임시 배경 인덱스 저장
-		await userRef.set({ username, bgIndex: tempBgIndex });
+btnLogin.addEventListener("click", async () => {
+	loginMessage.textContent = "";
+	try {
+		await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+	} catch (err) {
+		if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') return;
+		console.error('로그인 실패:', err);
+		loginMessage.textContent = err.code === 'auth/popup-blocked'
+			? "팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도하세요."
+			: `로그인에 실패했습니다. (${err.code || err.message})`;
 	}
-
-	localStorage.setItem("username", username);
-	await showLoggedIn(username);
 });
 
-async function showLoggedIn(username) {
-	currentUsername = username;
+btnLogout.addEventListener("click", () => auth.signOut());
 
-	document.getElementById("login").classList.add("hidden");
-	document.getElementById("todo").classList.remove("hidden");
-	document.getElementById("greeting").textContent = `좋은 하루, ${username}!`;
-
-	// Firestore에서 저장된 배경 로드
-	const userDoc = await db.collection('users').doc(username).get();
-	if (userDoc.exists && userDoc.data().bgIndex !== undefined) {
-		const savedIndex = userDoc.data().bgIndex;
-		document.body.style.backgroundImage = `url(${bg[savedIndex]})`;
-		document.querySelectorAll(".bg-thumb").forEach(t => {
-			t.classList.toggle("active", Number(t.dataset.index) === savedIndex);
-		});
+auth.onAuthStateChanged(async (user) => {
+	if (user) {
+		await showLoggedIn(user);
+	} else {
+		showLoggedOut();
 	}
+});
 
-	await loadTodosFromFirestore(username);
-	await loadBookmarksFromFirestore(username);
+function showLoggedOut() {
+	currentUid = null;
+	todos = [];
+	todoList.innerHTML = "";
+	bookmarkList.innerHTML = "";
+	toastContainer.innerHTML = "";
+	loginSection.classList.remove("hidden");
+	appSection.classList.add("hidden");
+	btnLogout.classList.add("hidden");
+	document.getElementById("greeting").textContent = "";
 }
 
-// 자동 로그인
-const savedUsername = localStorage.getItem("username");
-if (savedUsername) {
-	showLoggedIn(savedUsername);
+async function showLoggedIn(user) {
+	currentUid = user.uid;
+
+	loginSection.classList.add("hidden");
+	appSection.classList.remove("hidden");
+	btnLogout.classList.remove("hidden");
+	document.getElementById("greeting").textContent = `좋은 하루, ${user.displayName || "친구"}!`;
+
+	try {
+		await runPendingMigration(user.uid);
+
+		const userRef = db.collection('users').doc(user.uid);
+		const userDoc = await userRef.get();
+		if (!userDoc.exists) {
+			// 신규 사용자 — 현재 임시 배경 인덱스 저장
+			await userRef.set({ bgIndex: tempBgIndex });
+		} else if (userDoc.data().bgIndex !== undefined) {
+			const savedIndex = userDoc.data().bgIndex;
+			document.body.style.backgroundImage = `url(${bg[savedIndex]})`;
+			document.querySelectorAll(".bg-thumb").forEach(t => {
+				t.classList.toggle("active", Number(t.dataset.index) === savedIndex);
+			});
+		}
+
+		await loadTodosFromFirestore(user.uid);
+		await loadBookmarksFromFirestore(user.uid);
+	} catch (err) {
+		console.error('데이터 로드 실패:', err);
+		alert(`데이터를 불러오지 못했습니다. (${err.code || err.message})`);
+	}
+}
+
+// 이름 기반 데이터 → 계정(uid) 데이터 1회 이전
+// 주소에 ?migrate=<토큰>이 있으면 users/migrate-<토큰> 문서의 할일·즐겨찾기를 내 계정으로 복사하고
+// 이전용 문서는 삭제한다. 토큰을 모르면 문서를 찾을 수 없다(보안 규칙상 목록 조회 불가).
+async function runPendingMigration(uid) {
+	const params = new URLSearchParams(location.search);
+	const token = params.get("migrate");
+	if (!token) return;
+
+	const migrationRef = db.collection('users').doc(`migrate-${token}`);
+	const snap = await migrationRef.get();
+	if (snap.exists) {
+		const { todos: oldTodos = [], bookmarks: oldBookmarks = [], bgIndex } = snap.data();
+		const userRef = db.collection('users').doc(uid);
+		const batch = db.batch();
+		oldTodos.forEach(t => batch.set(userRef.collection('todos').doc(String(t.id)), t));
+		oldBookmarks.forEach(b => batch.set(userRef.collection('bookmarks').doc(String(b.id)), b));
+		if (bgIndex !== undefined) batch.set(userRef, { bgIndex }, { merge: true });
+		batch.delete(migrationRef);
+		await batch.commit();
+		alert(`기존 데이터를 계정으로 옮겼습니다. (할일 ${oldTodos.length}개, 즐겨찾기 ${oldBookmarks.length}개)`);
+	} else {
+		alert("이전할 데이터가 없거나 이미 옮겨졌습니다.");
+	}
+
+	params.delete("migrate");
+	const query = params.toString();
+	history.replaceState(null, "", location.pathname + (query ? `?${query}` : "") + location.hash);
 }
 
 // 투두리스트
@@ -83,7 +143,7 @@ todoForm.addEventListener("submit", async (event) => {
 	event.preventDefault();
 	const newTodo = newTodoInput.value.trim();
 	newTodoInput.value = "";
-	if (!newTodo || !currentUsername) return;
+	if (!newTodo || !currentUid) return;
 
 	const parts = newTodo.split('|');
 	const text = parts[0].trim();
@@ -97,18 +157,18 @@ todoForm.addEventListener("submit", async (event) => {
 		datetime: getCurrentDateYMD()
 	};
 
-	await db.collection('users').doc(currentUsername).collection('todos')
+	await db.collection('users').doc(currentUid).collection('todos')
 		.doc(String(newTodoObj.id)).set(newTodoObj);
 
 	todos.push(newTodoObj);
 	paintTodo(newTodoObj);
 });
 
-async function loadTodosFromFirestore(username) {
+async function loadTodosFromFirestore(uid) {
 	todoList.innerHTML = "";
 	todos = [];
 
-	const snapshot = await db.collection('users').doc(username)
+	const snapshot = await db.collection('users').doc(uid)
 		.collection('todos').orderBy('id').get();
 
 	snapshot.forEach(doc => {
@@ -158,10 +218,10 @@ function link(e) {
 async function deleteToDo(e) {
 	const li = e.target.parentElement;
 	const todoId = String(li.id);
-	const username = currentUsername;
+	const uid = currentUid;
 	const deleted = todos.find(todo => String(todo.id) === todoId);
 
-	await db.collection('users').doc(username)
+	await db.collection('users').doc(uid)
 		.collection('todos').doc(todoId).delete();
 
 	todos = todos.filter(todo => String(todo.id) !== todoId);
@@ -169,9 +229,9 @@ async function deleteToDo(e) {
 
 	if (!deleted) return;
 	showUndoToast(`할일 삭제됨: ${deleted.title || deleted.text}`, async () => {
-		await db.collection('users').doc(username)
+		await db.collection('users').doc(uid)
 			.collection('todos').doc(todoId).set(deleted);
-		if (username !== currentUsername) return;
+		if (uid !== currentUid) return;
 		todos.push(deleted);
 		todos.sort((a, b) => a.id - b.id);
 		paintTodo(deleted);
@@ -251,7 +311,7 @@ let editingBookmarkId = null;
 
 bookmarkForm.addEventListener("submit", async (event) => {
 	event.preventDefault();
-	if (!currentUsername) {
+	if (!currentUid) {
 		alert("로그인 후 이용 가능합니다.");
 		return;
 	}
@@ -274,7 +334,7 @@ bookmarkForm.addEventListener("submit", async (event) => {
 		}
 	}
 
-	const bookmarksRef = db.collection('users').doc(currentUsername).collection('bookmarks');
+	const bookmarksRef = db.collection('users').doc(currentUid).collection('bookmarks');
 
 	if (editingBookmarkId) {
 		// 수정
@@ -306,11 +366,11 @@ function exitBookmarkEditMode() {
 	bookmarkCancelBtn.classList.add("hidden");
 }
 
-async function loadBookmarksFromFirestore(username) {
+async function loadBookmarksFromFirestore(uid) {
 	bookmarkList.innerHTML = "";
 	exitBookmarkEditMode();
 
-	const snapshot = await db.collection('users').doc(username)
+	const snapshot = await db.collection('users').doc(uid)
 		.collection('bookmarks').orderBy('id').get();
 
 	snapshot.forEach(doc => paintBookmark(doc.data()));
@@ -347,8 +407,8 @@ function paintBookmark(bookmark) {
 	deleteButton.innerText = "🗑️";
 	deleteButton.title = "삭제";
 	deleteButton.addEventListener("click", async () => {
-		const username = currentUsername;
-		const bookmarkRef = db.collection('users').doc(username)
+		const uid = currentUid;
+		const bookmarkRef = db.collection('users').doc(uid)
 			.collection('bookmarks').doc(String(bookmark.id));
 		// 수정으로 바뀌었을 수 있으므로 현재 화면 값 기준으로 보관
 		const deleted = {
@@ -368,7 +428,7 @@ function paintBookmark(bookmark) {
 				deleted.key = null;
 			}
 			await bookmarkRef.set(deleted);
-			if (username !== currentUsername) return;
+			if (uid !== currentUid) return;
 			paintBookmark(deleted);
 			placeById(bookmarkList, bookmarkList.querySelector(`li[id="${deleted.id}"]`));
 		});
@@ -511,8 +571,8 @@ async function selectBg(index) {
 	});
 
 	// Firestore에 저장
-	if (currentUsername) {
-		await db.collection('users').doc(currentUsername).update({ bgIndex: index });
+	if (currentUid) {
+		await db.collection('users').doc(currentUid).update({ bgIndex: index });
 	}
 }
 

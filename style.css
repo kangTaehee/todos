@@ -218,6 +218,7 @@ button {
 }
 
 .btn-backup,
+.btn-logout,
 .github {
 	margin: 0;
 	padding: 0;
@@ -340,4 +341,38 @@ button {
 @keyframes toast-in {
 	from { opacity: 0; transform: translateY(10px); }
 	to { opacity: 1; transform: translateY(0); }
+}
+
+/* 로그인 */
+#login {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	font-size: 1.6rem;
+}
+
+#login.hidden {
+	display: none;
+}
+
+#btn-login {
+	margin: 0;
+	padding: 10px 20px;
+	font-size: 1.6rem;
+	cursor: pointer;
+}
+
+#login-message {
+	min-height: 1.6em;
+	color: #ffd54f;
+}
+
+.btn-logout {
+	left: auto;
+	right: 20px;
+}
+
+.btn-logout.hidden {
+	display: none;
 }
