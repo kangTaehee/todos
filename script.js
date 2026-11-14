@@ -158,12 +158,72 @@ function link(e) {
 async function deleteToDo(e) {
 	const li = e.target.parentElement;
 	const todoId = String(li.id);
+	const username = currentUsername;
+	const deleted = todos.find(todo => String(todo.id) === todoId);
 
-	await db.collection('users').doc(currentUsername)
+	await db.collection('users').doc(username)
 		.collection('todos').doc(todoId).delete();
 
 	todos = todos.filter(todo => String(todo.id) !== todoId);
 	li.remove();
+
+	if (!deleted) return;
+	showUndoToast(`할일 삭제됨: ${deleted.title || deleted.text}`, async () => {
+		await db.collection('users').doc(username)
+			.collection('todos').doc(todoId).set(deleted);
+		if (username !== currentUsername) return;
+		todos.push(deleted);
+		todos.sort((a, b) => a.id - b.id);
+		paintTodo(deleted);
+		placeById(todoList, document.getElementById(todoId));
+	});
+}
+
+// 삭제 실행 취소 토스트 — 일정 시간 동안 "실행 취소" 버튼을 보여주고, 누르면 onUndo 실행
+const UNDO_TIMEOUT = 7000;
+const toastContainer = document.createElement("div");
+toastContainer.id = "toast-container";
+document.body.appendChild(toastContainer);
+
+function showUndoToast(message, onUndo) {
+	const toast = document.createElement("div");
+	toast.className = "toast";
+
+	const text = document.createElement("span");
+	text.className = "toast-text";
+	text.textContent = message;
+
+	const undoButton = document.createElement("button");
+	undoButton.type = "button";
+	undoButton.textContent = "실행 취소";
+
+	const close = () => {
+		clearTimeout(timer);
+		toast.remove();
+	};
+	const timer = setTimeout(close, UNDO_TIMEOUT);
+
+	undoButton.addEventListener("click", async () => {
+		undoButton.disabled = true;
+		try {
+			await onUndo();
+			close();
+		} catch (err) {
+			console.error('실행 취소 실패:', err);
+			text.textContent = "실행 취소에 실패했습니다.";
+		}
+	});
+
+	toast.appendChild(text);
+	toast.appendChild(undoButton);
+	toastContainer.appendChild(toast);
+}
+
+// 복구된 항목을 id(생성 시각) 순서에 맞는 원래 위치로 옮긴다
+function placeById(list, item) {
+	if (!item) return;
+	const next = [...list.children].find(li => li !== item && Number(li.id) > Number(item.id));
+	list.insertBefore(item, next || null);
 }
 
 async function copyToDo(e) {
@@ -287,10 +347,31 @@ function paintBookmark(bookmark) {
 	deleteButton.innerText = "🗑️";
 	deleteButton.title = "삭제";
 	deleteButton.addEventListener("click", async () => {
-		await db.collection('users').doc(currentUsername)
-			.collection('bookmarks').doc(String(bookmark.id)).delete();
+		const username = currentUsername;
+		const bookmarkRef = db.collection('users').doc(username)
+			.collection('bookmarks').doc(String(bookmark.id));
+		// 수정으로 바뀌었을 수 있으므로 현재 화면 값 기준으로 보관
+		const deleted = {
+			title: link.textContent,
+			url: link.dataset.url,
+			key: item.dataset.key || null,
+			id: bookmark.id
+		};
+
+		await bookmarkRef.delete();
 		if (editingBookmarkId === bookmark.id) exitBookmarkEditMode();
 		item.remove();
+
+		showUndoToast(`즐겨찾기 삭제됨: ${deleted.title}`, async () => {
+			// 삭제 후 같은 단축키를 다른 즐겨찾기에 지정했다면 복구본의 단축키는 비운다
+			if (deleted.key && bookmarkList.querySelector(`li[data-key="${CSS.escape(deleted.key)}"]`)) {
+				deleted.key = null;
+			}
+			await bookmarkRef.set(deleted);
+			if (username !== currentUsername) return;
+			paintBookmark(deleted);
+			placeById(bookmarkList, bookmarkList.querySelector(`li[id="${deleted.id}"]`));
+		});
 	});
 
 	item.appendChild(link);

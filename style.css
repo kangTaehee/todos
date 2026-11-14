@@ -289,3 +289,55 @@ button {
 .backup-restore-container {
 	display: none;
 }
+/* 삭제 실행 취소 토스트 */
+#toast-container {
+	position: fixed;
+	left: 50%;
+	bottom: 20px;
+	transform: translateX(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	z-index: 1000;
+	max-width: calc(100vw - 32px);
+}
+
+.toast {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 8px 8px 16px;
+	background: rgba(0, 0, 0, 0.75);
+	backdrop-filter: blur(6px);
+	border-radius: 8px;
+	font-size: 1.4rem;
+	animation: toast-in 0.2s ease-out;
+}
+
+.toast-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 50vw;
+}
+
+.toast button {
+	margin: 0;
+	padding: 6px 10px;
+	white-space: nowrap;
+	cursor: pointer;
+	color: #ffd54f;
+	background: transparent;
+	border-color: #ffd54f;
+}
+
+.toast button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+@keyframes toast-in {
+	from { opacity: 0; transform: translateY(10px); }
+	to { opacity: 1; transform: translateY(0); }
+}
