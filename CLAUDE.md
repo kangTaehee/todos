@@ -36,6 +36,7 @@ python -m http.server 8000
   - `id`는 `Date.now()` 타임스탬프이며 문서 ID로도 사용 (문자열 변환)
   - `text`는 할일 내용 또는 URL, `title`은 `URL|제목` 형식 입력 시의 링크 제목
 - `users/{uid}/bookmarks/{id}` — `{ title, url, key, id }` (`key`는 전역 단축키 한 글자, 없으면 `null`)
+- `users/{uid}/trash/{type}-{id}` — `{ type: 'todo'|'bookmark', data, deletedAt }` 삭제된 항목 보관 (30일)
 - `users/migrate-{토큰}` — 이름 기반 데이터를 계정으로 옮기기 위한 1회용 문서. `?migrate=<토큰>`으로 접속해 로그인하면 `runPendingMigration`이 복사 후 삭제한다.
 - `users/태희`, `users/집`, `users/희희호호` — 이름 기반 시절의 레거시 데이터. 보안 규칙상 아무도 접근할 수 없으며 백업 용도로만 남아 있다.
 
@@ -52,7 +53,7 @@ Firebase Authentication의 Google 로그인(`signInWithPopup`)을 사용한다. 
 - 투두 입력란은 `할일` 또는 `URL|링크제목` 형식을 파싱 (`|` 구분)
 - 투두 텍스트 클릭 시 `http`/`file`로 시작하면 새 창으로 열림
 - 배경 선택기(`bg` 배열)는 선택 인덱스를 Firestore `bgIndex`에 저장
-- 할일·즐겨찾기 삭제는 즉시 Firestore에서 지우고, 7초간 실행 취소 토스트(`showUndoToast`)를 띄워 되살릴 수 있다
+- 할일·즐겨찾기 삭제는 원본을 지우고 `users/{uid}/trash/{type}-{id}`(`{ type, data, deletedAt }`)로 옮긴다(`moveToTrash`). 7초간 실행 취소 토스트가 뜨고, 이후에도 "최근 삭제" 목록에서 복구할 수 있다(`restoreFromTrash`). 30일이 지난 항목은 로그인 시 자동 영구 삭제
 - 날씨는 OpenWeatherMap API 사용 (API 키가 script.js에 하드코딩됨)
 
 ## 파일 참고

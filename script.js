@@ -67,6 +67,8 @@ function showLoggedOut() {
 	todoList.innerHTML = "";
 	bookmarkList.innerHTML = "";
 	toastContainer.innerHTML = "";
+	trashList.innerHTML = "";
+	updateTrashCount();
 	loginSection.classList.remove("hidden");
 	appSection.classList.add("hidden");
 	btnLogout.classList.add("hidden");
@@ -99,6 +101,7 @@ async function showLoggedIn(user) {
 
 		await loadTodosFromFirestore(user.uid);
 		await loadBookmarksFromFirestore(user.uid);
+		await loadTrash(user.uid);
 	} catch (err) {
 		console.error('데이터 로드 실패:', err);
 		alert(`데이터를 불러오지 못했습니다. (${err.code || err.message})`);
@@ -218,26 +221,160 @@ function link(e) {
 async function deleteToDo(e) {
 	const li = e.target.parentElement;
 	const todoId = String(li.id);
-	const uid = currentUid;
 	const deleted = todos.find(todo => String(todo.id) === todoId);
+	if (!deleted) return;
 
-	await db.collection('users').doc(uid)
-		.collection('todos').doc(todoId).delete();
+	const trashItem = await moveToTrash('todo', deleted);
 
 	todos = todos.filter(todo => String(todo.id) !== todoId);
 	li.remove();
 
-	if (!deleted) return;
-	showUndoToast(`할일 삭제됨: ${deleted.title || deleted.text}`, async () => {
-		await db.collection('users').doc(uid)
-			.collection('todos').doc(todoId).set(deleted);
-		if (uid !== currentUid) return;
-		todos.push(deleted);
-		todos.sort((a, b) => a.id - b.id);
-		paintTodo(deleted);
-		placeById(todoList, document.getElementById(todoId));
-	});
+	showUndoToast(`할일 삭제됨: ${trashLabel(trashItem)}`, () => restoreFromTrash(trashItem));
 }
+
+// 휴지통 — 삭제한 할일·즐겨찾기를 users/{uid}/trash에 보관해 새로고침 후에도 복구할 수 있게 한다.
+// 문서: trash/{type}-{id} = { type: 'todo' | 'bookmark', data: 원본 문서, deletedAt: ms }
+const TRASH_RETENTION_DAYS = 30;
+const TRASH_COLLECTION = { todo: 'todos', bookmark: 'bookmarks' };
+const trashSection = document.getElementById("trash");
+const trashList = document.getElementById("trash-list");
+const trashCount = document.getElementById("trash-count");
+const btnTrashEmpty = document.getElementById("btn-trash-empty");
+
+function trashDocId(item) {
+	return `${item.type}-${item.data.id}`;
+}
+
+function trashLabel(item) {
+	return item.type === 'todo' ? (item.data.title || item.data.text) : item.data.title;
+}
+
+// 원본 삭제와 휴지통 기록을 한 번에(원자적으로) 처리
+async function moveToTrash(type, data) {
+	const userRef = db.collection('users').doc(currentUid);
+	const item = { type, data, deletedAt: Date.now() };
+	const batch = db.batch();
+	batch.delete(userRef.collection(TRASH_COLLECTION[type]).doc(String(data.id)));
+	batch.set(userRef.collection('trash').doc(trashDocId(item)), item);
+	await batch.commit();
+	paintTrashItem(item, true);
+	return item;
+}
+
+async function restoreFromTrash(item) {
+	// 토스트와 휴지통 목록 양쪽에서 같은 항목을 복구하면 중복 표시되므로 한 번만 처리
+	if (item.restored) return;
+	const { type, data } = item;
+	if (type === 'bookmark' && data.key && bookmarkList.querySelector(`li[data-key="${CSS.escape(data.key)}"]`)) {
+		// 삭제 후 같은 단축키를 다른 즐겨찾기에 지정했다면 복구본의 단축키는 비운다
+		data.key = null;
+	}
+
+	const userRef = db.collection('users').doc(currentUid);
+	const batch = db.batch();
+	batch.set(userRef.collection(TRASH_COLLECTION[type]).doc(String(data.id)), data);
+	batch.delete(userRef.collection('trash').doc(trashDocId(item)));
+	await batch.commit();
+	item.restored = true;
+
+	removeTrashItem(item);
+	if (type === 'todo') {
+		todos.push(data);
+		todos.sort((a, b) => a.id - b.id);
+		paintTodo(data);
+		placeById(todoList, todoList.querySelector(`li[id="${data.id}"]`));
+	} else {
+		paintBookmark(data);
+		placeById(bookmarkList, bookmarkList.querySelector(`li[id="${data.id}"]`));
+	}
+}
+
+// 휴지통 로드 — 보관 기간이 지난 항목은 영구 삭제
+async function loadTrash(uid) {
+	trashList.innerHTML = "";
+	const trashRef = db.collection('users').doc(uid).collection('trash');
+	const snapshot = await trashRef.orderBy('deletedAt').get();
+	const expireBefore = Date.now() - TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+	const batch = db.batch();
+	let expired = 0;
+	snapshot.forEach(doc => {
+		const item = doc.data();
+		if (item.deletedAt < expireBefore) {
+			batch.delete(doc.ref);
+			expired++;
+		} else {
+			paintTrashItem(item, true);
+		}
+	});
+	if (expired) await batch.commit();
+	updateTrashCount();
+}
+
+// prepend: 최근 삭제가 위로 오도록 앞에 추가
+function paintTrashItem(item, prepend) {
+	const li = document.createElement("li");
+	li.className = "trash-item";
+	li.dataset.trashId = trashDocId(item);
+
+	const type = document.createElement("span");
+	type.className = "trash-type";
+	type.textContent = item.type === 'todo' ? "할일" : "즐겨찾기";
+
+	const title = document.createElement("span");
+	title.className = "trash-title";
+	title.textContent = trashLabel(item);
+	title.title = item.type === 'todo' ? item.data.text : item.data.url;
+
+	const date = document.createElement("span");
+	date.className = "trash-date";
+	const d = new Date(item.deletedAt);
+	date.textContent = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
+	const restoreButton = document.createElement("button");
+	restoreButton.type = "button";
+	restoreButton.textContent = "복구";
+	restoreButton.addEventListener("click", async () => {
+		restoreButton.disabled = true;
+		try {
+			await restoreFromTrash(item);
+		} catch (err) {
+			console.error('복구 실패:', err);
+			alert(`복구에 실패했습니다. (${err.code || err.message})`);
+			restoreButton.disabled = false;
+		}
+	});
+
+	li.append(type, title, date, restoreButton);
+	const existing = trashList.querySelector(`li[data-trash-id="${CSS.escape(li.dataset.trashId)}"]`);
+	if (existing) existing.remove();
+	if (prepend) trashList.prepend(li); else trashList.appendChild(li);
+	updateTrashCount();
+}
+
+function removeTrashItem(item) {
+	trashList.querySelector(`li[data-trash-id="${CSS.escape(trashDocId(item))}"]`)?.remove();
+	updateTrashCount();
+}
+
+function updateTrashCount() {
+	const count = trashList.children.length;
+	trashCount.textContent = count;
+	trashSection.classList.toggle("hidden", count === 0);
+}
+
+btnTrashEmpty.addEventListener("click", async () => {
+	if (!currentUid) return;
+	if (!confirm(`휴지통의 ${trashList.children.length}개 항목을 영구 삭제합니다. 계속할까요?`)) return;
+	const trashRef = db.collection('users').doc(currentUid).collection('trash');
+	const snapshot = await trashRef.get();
+	const batch = db.batch();
+	snapshot.forEach(doc => batch.delete(doc.ref));
+	await batch.commit();
+	trashList.innerHTML = "";
+	toastContainer.innerHTML = "";
+	updateTrashCount();
+});
 
 // 삭제 실행 취소 토스트 — 일정 시간 동안 "실행 취소" 버튼을 보여주고, 누르면 onUndo 실행
 const UNDO_TIMEOUT = 7000;
@@ -407,9 +544,6 @@ function paintBookmark(bookmark) {
 	deleteButton.innerText = "🗑️";
 	deleteButton.title = "삭제";
 	deleteButton.addEventListener("click", async () => {
-		const uid = currentUid;
-		const bookmarkRef = db.collection('users').doc(uid)
-			.collection('bookmarks').doc(String(bookmark.id));
 		// 수정으로 바뀌었을 수 있으므로 현재 화면 값 기준으로 보관
 		const deleted = {
 			title: link.textContent,
@@ -418,20 +552,11 @@ function paintBookmark(bookmark) {
 			id: bookmark.id
 		};
 
-		await bookmarkRef.delete();
+		const trashItem = await moveToTrash('bookmark', deleted);
 		if (editingBookmarkId === bookmark.id) exitBookmarkEditMode();
 		item.remove();
 
-		showUndoToast(`즐겨찾기 삭제됨: ${deleted.title}`, async () => {
-			// 삭제 후 같은 단축키를 다른 즐겨찾기에 지정했다면 복구본의 단축키는 비운다
-			if (deleted.key && bookmarkList.querySelector(`li[data-key="${CSS.escape(deleted.key)}"]`)) {
-				deleted.key = null;
-			}
-			await bookmarkRef.set(deleted);
-			if (uid !== currentUid) return;
-			paintBookmark(deleted);
-			placeById(bookmarkList, bookmarkList.querySelector(`li[id="${deleted.id}"]`));
-		});
+		showUndoToast(`즐겨찾기 삭제됨: ${deleted.title}`, () => restoreFromTrash(trashItem));
 	});
 
 	item.appendChild(link);
